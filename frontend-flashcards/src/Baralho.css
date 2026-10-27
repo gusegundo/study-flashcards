@@ -1,0 +1,300 @@
+/* ===== BARALHO ===== */
+
+.baralho {
+  --raio: 22px;
+  --tempo-saida: 240ms; /* tem que bater com TEMPO_SAIDA no Baralho.jsx */
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 0 8px;
+  overflow: hidden; /* a carta que voa pra fora some, sem criar barra de rolagem */
+  color: #f8fafc;
+}
+
+/* O "palco": a área onde ficam as 3 cartas empilhadas.
+   aspect-ratio deixa a carta em pé (4 de largura por 5 de altura) e responsiva. */
+.palco {
+  position: relative;
+  width: min(76%, 290px);
+  aspect-ratio: 4 / 5;
+  margin-inline: auto;
+}
+
+/* ----- Cartas vizinhas (atrás, nos lados) ----- */
+.lateral {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  padding: 14px;
+  border-radius: var(--raio);
+  background: linear-gradient(160deg, #1e293b, #0f172a);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  /* --p vai de 0 a 1 (vem do React) e "acorda" a vizinha enquanto você arrasta */
+  transform: translateX(var(--x)) scale(calc(0.86 + 0.1 * var(--p, 0))) rotate(var(--r));
+  opacity: calc(0.5 + 0.4 * var(--p, 0));
+  transition: transform var(--tempo-saida) ease-out, opacity var(--tempo-saida) ease-out;
+}
+.lateral.esquerda {
+  --x: -46%;
+  --r: -6deg;
+}
+.lateral.direita {
+  --x: 46%;
+  --r: 6deg;
+}
+.lateral p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #94a3b8;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+/* Enquanto arrasta, as vizinhas acompanham sem atraso */
+.em-arrasto .lateral {
+  transition: none;
+}
+
+/* ----- Carta do meio ----- */
+/* .carta é quem se MOVE (translate/rotate do arrasto, aplicados pelo React) */
+.carta {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: var(--raio);
+  cursor: grab;
+  touch-action: pan-y; /* o navegador cuida da rolagem vertical, o arrasto horizontal é nosso */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--tempo-saida) ease-out, opacity var(--tempo-saida) ease-out;
+}
+/* O touch-action precisa valer também pra tudo DENTRO da carta. A área do texto rola
+   (overflow-y: auto) e, quando o dedo começa em cima dela, o navegador ignora o touch-action
+   da carta e rouba o gesto (o arrasto "morre" no celular). */
+.carta *,
+.carta {
+  touch-action: pan-y;
+}
+.carta.arrastando {
+  cursor: grabbing;
+  transition: none; /* enquanto segura, nada de atraso: a carta cola no dedo */
+}
+.carta:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 4px;
+}
+
+/* .entrada só faz a animação de aparecer e dá a perspectiva 3D pro giro */
+.entrada {
+  position: absolute;
+  inset: 0;
+  perspective: 1100px;
+  animation: entrar 300ms ease-out;
+}
+/* Sem opacity de propósito: a carta nova nasce opaca, senão dá pra ver as vizinhas através dela */
+@keyframes entrar {
+  from {
+    transform: scale(0.92);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* .miolo é quem GIRA (rotateY) quando a carta vira */
+.miolo {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 550ms cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.carta.virada .miolo {
+  transform: rotateY(180deg);
+}
+
+/* Frente e verso ficam um em cima do outro; backface-visibility esconde o lado de trás */
+.face {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 14px;
+  border-radius: var(--raio);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.frente {
+  background: linear-gradient(160deg, #3730a3 0%, #1e1b4b 40%, #0f172a 100%);
+  border: 1px solid rgba(129, 140, 248, 0.5);
+  box-shadow: 0 16px 32px -14px rgba(79, 70, 229, 0.7);
+}
+.verso {
+  transform: rotateY(180deg); /* já nasce virado, por isso só aparece quando o miolo gira */
+  background: linear-gradient(160deg, #047857 0%, #064e3b 40%, #0f172a 100%);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  box-shadow: 0 16px 32px -14px rgba(16, 185, 129, 0.6);
+}
+/* Marca d'água decorativa */
+.face::after {
+  content: '?';
+  position: absolute;
+  right: 10px;
+  bottom: -22px;
+  font-size: 8rem;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0.07;
+  pointer-events: none;
+}
+.verso::after {
+  content: '✓';
+}
+
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.chip {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+}
+.frente .chip-tipo {
+  color: #c7d2fe;
+}
+.verso .chip-tipo {
+  color: #a7f3d0;
+}
+
+/* O texto fica no centro; se for muito grande, rola dentro da carta */
+.texto {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow-y: auto;
+  padding: 8px 2px;
+}
+.texto p {
+  margin: auto; /* centraliza sem cortar o topo quando o texto é grande */
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.4;
+  font-size: clamp(1rem, 3.4vw + 0.3rem, 1.32rem);
+  overflow-wrap: anywhere;
+}
+/* Textos grandes ganham letra menor (a classe é escolhida no Baralho.jsx pelo tamanho do texto) */
+.texto.longo p {
+  font-size: clamp(0.9rem, 2.8vw + 0.3rem, 1.1rem);
+}
+.texto.enorme p {
+  font-size: clamp(0.82rem, 2.4vw + 0.3rem, 0.95rem);
+  font-weight: 500;
+}
+/* Esmaece as bordas de cima e de baixo: avisa que o texto continua quando precisa rolar */
+.texto {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 22px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 22px), transparent 100%);
+}
+.base {
+  text-align: center;
+  font-size: 0.66rem;
+  color: rgba(226, 232, 240, 0.5);
+}
+
+/* ----- Botões e dica ----- */
+.controles {
+  display: flex;
+  gap: 10px;
+  width: min(100%, 440px);
+  margin: 22px auto 0;
+}
+.botao {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: 600 0.8rem system-ui, sans-serif;
+  cursor: pointer;
+  transition: transform 120ms, background 150ms, border-color 150ms;
+}
+.botao:hover:not(:disabled) {
+  background: #273449;
+  border-color: #475569;
+}
+.botao:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.botao:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.botao:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 3px;
+}
+.botao-virar {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(129, 140, 248, 0.4);
+  color: #c7d2fe;
+}
+.botao-virar:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.28);
+  border-color: rgba(129, 140, 248, 0.6);
+}
+.botao-principal {
+  background: #4f46e5;
+  border-color: #6366f1;
+  color: #fff;
+  box-shadow: 0 8px 20px -8px rgba(79, 70, 229, 0.8);
+}
+/* O hover genérico de .botao deixaria o botão roxo cinza, então ele tem o seu próprio */
+.botao-principal:hover:not(:disabled) {
+  background: #6366f1;
+  border-color: #818cf8;
+}
+.dica {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+/* Quem pediu menos animação no sistema recebe trocas quase instantâneas */
+@media (prefers-reduced-motion: reduce) {
+  .baralho *,
+  .baralho *::before,
+  .baralho *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}

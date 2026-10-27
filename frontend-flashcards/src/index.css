@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  background-color: #020617; /* o mesmo slate-950 do App, evita piscar branco ao carregar */
+}

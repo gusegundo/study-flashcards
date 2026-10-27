@@ -1,0 +1,6 @@
+# Banco de dados local (cada pessoa tem os seus próprios cards)
+*.db
+
+# Python
+__pycache__/
+*.pyc
